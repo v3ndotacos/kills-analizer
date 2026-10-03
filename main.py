@@ -1,6 +1,8 @@
 import cv2
 from pathlib import Path
-SEGUNDO = 49
+import numpy as np
+
+SEGUNDO = 534
 
 cap = cv2.VideoCapture(str(Path("data") / "videos" / "video.mp4"))
 ANCHO_REF, ALTO_REF = 1920, 1080
@@ -14,7 +16,7 @@ cap.release()
 
 if ret:
     frame = cv2.resize(frame, (ANCHO_REF, ALTO_REF))
-    cv2.imwrite(str(Path("data") / "images" / "frame_test_49s.png"), frame)
+    cv2.imwrite(str(Path("data") / "images" / "frame_test_534s.png"), frame)
     print(f"Frame saved successfully at {nro_frames} : {SEGUNDO}s.")
 else:   
     print("Failed to read the frame.")
@@ -29,18 +31,13 @@ killfeed = frame[y1:y2, x1:x2]
 cv2.imwrite(str(Path("data") / "images" / "killfeed_cropped.png"), killfeed)
 print(f"killfeed cropped: {killfeed.shape[1]}x{killfeed.shape[0]}")
 
-template = cv2.imread(str(Path("data") / "images" / "kill_template.png"), cv2.IMREAD_GRAYSCALE)
-if template is None:
-    raise FileNotFoundError("Template image not found. Please check the path.") #no ejecutar lo siguiente
+killfeed_hsv = cv2.cvtColor(killfeed, cv2.COLOR_BGR2HSV)
 
-cv2.imwrite(str(Path("data") / "images" / "killfeed_zoom.png"), 
-            cv2.resize(killfeed, None, fx=3, fy=3, interpolation=cv2.INTER_NEAREST))
+verde_bajo = np.array([60, 60, 130])
+verde_alto = np.array([85, 140, 220])
 
-killfeed_gris = cv2.cvtColor(killfeed, cv2.COLOR_BGR2GRAY)
+mascara = cv2.inRange(killfeed_hsv, verde_bajo, verde_alto)
+pixeles_verdes = cv2.countNonZero(mascara)
 
-resultado = cv2.matchTemplate(killfeed_gris, template, cv2.TM_CCOEFF_NORMED)
-_, confianza, _, ubicacion = cv2.minMaxLoc(resultado)
-                                           
-print(f"Confianza: {confianza:.2f}, Ubicación: {ubicacion}")
-
-# TODO: Implementar ahora la lógica para ver si da mejores valores por hsv (color)
+print(f"Píxeles verdes detectados: {pixeles_verdes}")
+cv2.imwrite(str(Path("data") / "images" / "mascara_verde.png"), mascara)
